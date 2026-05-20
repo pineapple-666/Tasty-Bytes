@@ -1,0 +1,239 @@
+version: 2
+
+models:
+  # ── BRONZE ────────────────────────────────────────────────────────────────
+
+  - name: bronze_order_header
+    description: Raw order header records loaded from the TASTY_BYTES RAW_POS schema.
+    columns:
+      - name: order_id
+        description: '{{ doc("order_id") }}'
+        tests:
+          - unique
+          - not_null
+          - generic_not_null
+      - name: truck_id
+        description: '{{ doc("truck_id") }}'
+      - name: order_ts
+        description: '{{ doc("order_ts") }}'
+      - name: order_total
+        description: '{{ doc("order_total") }}'
+
+  - name: bronze_order_detail
+    description: Raw order line-item records loaded from the TASTY_BYTES RAW_POS schema.
+    columns:
+      - name: order_detail_id
+        description: '{{ doc("order_detail_id") }}'
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: '{{ doc("order_id") }}'
+      - name: menu_item_id
+        description: '{{ doc("menu_item_id") }}'
+      - name: price
+        description: '{{ doc("price") }}'
+
+  - name: bronze_menu
+    description: Raw menu catalogue for all Tasty Bytes truck brands.
+    columns:
+      - name: menu_item_id
+        description: '{{ doc("menu_item_id") }}'
+        tests:
+          - unique
+          - not_null
+
+  - name: bronze_truck
+    description: Raw truck inventory with location and franchise metadata.
+    columns:
+      - name: truck_id
+        description: '{{ doc("truck_id") }}'
+        tests:
+          - unique
+          - not_null
+
+  - name: bronze_franchise
+    description: Raw franchise owner records.
+    columns:
+      - name: franchise_id
+        description: '{{ doc("franchise_id") }}'
+        tests:
+          - unique
+          - not_null
+
+  - name: bronze_location
+    description: Raw physical truck location data.
+    columns:
+      - name: location_id
+        description: '{{ doc("location_id") }}'
+        tests:
+          - unique
+          - not_null
+
+  - name: bronze_country
+    description: Raw country and city reference data used to map ISO codes to full names.
+    columns:
+      - name: country_id
+        description: Unique identifier for the country-city combination.
+        tests:
+          - not_null
+
+  - name: bronze_customer_loyalty
+    description: Raw loyalty program member profiles.
+    columns:
+      - name: customer_id
+        description: '{{ doc("customer_id") }}'
+        tests:
+          - unique
+          - not_null
+
+  - name: bronze_weather_history
+    description: Raw daily weather history from the Frostbyte WeatherSource marketplace dataset.
+    columns:
+      - name: date_valid_std
+        description: '{{ doc("date_valid_std") }}'
+      - name: postal_code
+        description: Postal code identifying the weather station location.
+      - name: country
+        description: ISO 2-letter country code for the weather station.
+
+  - name: bronze_postal_codes
+    description: Postal code reference table mapping codes to city names (WeatherSource).
+    columns:
+      - name: postal_code
+        description: Postal code.
+      - name: city_name
+        description: '{{ doc("city_name") }}'
+
+  # ── SILVER ────────────────────────────────────────────────────────────────
+
+  - name: silver_orders
+    description: >
+      Enriched and joined order records combining order headers, line items,
+      menu, truck, franchise, location, and customer loyalty data.
+      Equivalent to the harmonized.orders_v view in the original Snowflake schema.
+    columns:
+      - name: order_id
+        description: '{{ doc("order_id") }}'
+        tests:
+          - not_null
+      - name: order_date
+        description: '{{ doc("order_date") }}'
+      - name: order_ts
+        description: '{{ doc("order_ts") }}'
+      - name: truck_brand_name
+        description: '{{ doc("truck_brand_name") }}'
+      - name: menu_type
+        description: '{{ doc("menu_type") }}'
+      - name: primary_city
+        description: '{{ doc("primary_city") }}'
+      - name: country
+        description: '{{ doc("country") }}'
+      - name: price
+        description: '{{ doc("price") }}'
+      - name: order_total
+        description: '{{ doc("order_total") }}'
+
+  - name: silver_daily_weather
+    description: >
+      Daily weather observations enriched with city names and full country descriptions,
+      filtered to cities where Tasty Bytes operates.
+      Equivalent to harmonized.daily_weather_v in the original Snowflake schema.
+    columns:
+      - name: date_valid_std
+        description: '{{ doc("date_valid_std") }}'
+        tests:
+          - not_null
+      - name: city_name
+        description: '{{ doc("city_name") }}'
+      - name: country_desc
+        description: '{{ doc("country_desc") }}'
+      - name: avg_temperature_air_2m_f
+        description: '{{ doc("avg_temperature_air_2m_f") }}'
+      - name: tot_precipitation_in
+        description: '{{ doc("tot_precipitation_in") }}'
+      - name: max_wind_speed_100m_mph
+        description: '{{ doc("max_wind_speed_100m_mph") }}'
+
+  - name: silver_customer_loyalty_metrics
+    description: >
+      Aggregated loyalty metrics per customer including lifetime sales,
+      order count, and visited locations.
+      Equivalent to harmonized.customer_loyalty_metrics_v in the original schema.
+    columns:
+      - name: customer_id
+        description: '{{ doc("customer_id") }}'
+        tests:
+          - unique
+          - not_null
+      - name: total_sales
+        description: '{{ doc("total_sales") }}'
+      - name: total_orders
+        description: '{{ doc("total_orders") }}'
+      - name: visited_location_ids_array
+        description: '{{ doc("visited_location_ids_array") }}'
+
+  # ── GOLD ──────────────────────────────────────────────────────────────────
+
+  - name: gold_daily_sales_hamburg
+    description: >
+      Daily sales revenue for Hamburg, Germany paired with weather conditions.
+      The primary analytical output for investigating food truck performance anomalies.
+      Equivalent to the combined analytics view in the original Snowflake schema.
+    columns:
+      - name: date
+        description: '{{ doc("date_valid_std") }}'
+        tests:
+          - unique
+          - not_null
+      - name: city_name
+        description: '{{ doc("city_name") }}'
+      - name: country_desc
+        description: '{{ doc("country_desc") }}'
+      - name: daily_sales
+        description: '{{ doc("daily_sales") }}'
+      - name: avg_temperature_fahrenheit
+        description: '{{ doc("avg_temperature_fahrenheit") }}'
+      - name: avg_temperature_celsius
+        description: '{{ doc("avg_temperature_celsius") }}'
+      - name: avg_precipitation_inches
+        description: '{{ doc("avg_precipitation_inches") }}'
+      - name: avg_precipitation_millimeters
+        description: '{{ doc("avg_precipitation_millimeters") }}'
+      - name: max_wind_speed_100m_mph
+        description: '{{ doc("max_wind_speed_100m_mph") }}'
+
+  - name: gold_daily_city_metrics
+    description: >
+      Daily sales and weather metrics for every city where Tasty Bytes operates.
+      Equivalent to analytics.daily_city_metrics_v in the original Snowflake schema.
+    columns:
+      - name: date
+        description: '{{ doc("date_valid_std") }}'
+      - name: city_name
+        description: '{{ doc("city_name") }}'
+      - name: country_desc
+        description: '{{ doc("country_desc") }}'
+      - name: daily_sales
+        description: '{{ doc("daily_sales") }}'
+      - name: avg_temperature_celsius
+        description: '{{ doc("avg_temperature_celsius") }}'
+      - name: max_wind_speed_100m_mph
+        description: '{{ doc("max_wind_speed_100m_mph") }}'
+
+  - name: gold_customer_loyalty_metrics
+    description: >
+      Final analytics-ready customer loyalty table with lifetime spend,
+      order count, and visited locations. Ordered by total spend descending.
+    columns:
+      - name: customer_id
+        description: '{{ doc("customer_id") }}'
+        tests:
+          - unique
+          - not_null
+      - name: total_sales
+        description: '{{ doc("total_sales") }}'
+      - name: total_orders
+        description: '{{ doc("total_orders") }}'
+      - name: favourite_brand
+        description: '{{ doc("favourite_brand") }}'

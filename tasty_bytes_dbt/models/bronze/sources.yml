@@ -1,0 +1,27 @@
+version: 2
+
+sources:
+  - name: tasty_bytes_raw_pos
+    database: TASTY_BYTES
+    schema: RAW_POS
+    tables:
+      - name: country
+      - name: franchise
+      - name: location
+      - name: menu
+      - name: truck
+      - name: order_header
+      - name: order_detail
+
+  - name: tasty_bytes_raw_customer
+    database: TASTY_BYTES
+    schema: RAW_CUSTOMER
+    tables:
+      - name: customer_loyalty
+
+  - name: frostbyte_weathersource
+    database: FROSTBYTE_WEATHERSOURCE
+    schema: ONPOINT_ID
+    tables:
+      - name: history_day
+      - name: postal_codes

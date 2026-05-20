@@ -1,0 +1,29 @@
+name: 'tasty_bytes'
+version: '1.0.0'
+config-version: 2
+
+profile: 'tasty_bytes'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  tasty_bytes:
+    bronze:
+      +materialized: view       # bronze is always a view — no data stored, always reflects source
+      +schema: bronze
+    silver:
+      +schema: silver           # materialization defined per-model (all are incremental)
+    gold:
+      +schema: gold             # materialization defined per-model (all are incremental)
+
+tests:
+  +store_failures: true
