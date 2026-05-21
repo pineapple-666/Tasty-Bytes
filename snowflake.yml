@@ -1,0 +1,14 @@
+definition_version: 2
+
+entities:
+  hamburg_dashboard:
+    type: streamlit
+    identifier:
+      name: hamburg_weather_sales
+      schema: GOLD
+      database: TASTY_BYTES
+    title: "Hamburg Weather & Sales"
+    query_warehouse: COMPUTE_WH
+    main_file: streamlit_app.py
+    artifacts:
+      - streamlit_app.py

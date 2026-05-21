@@ -1,22 +1,143 @@
-I will play the role of a data engineer on the Tasty Bytes team. Tasty Bytes is a fictional food truck company that runs 450 food trucks around the world. Here's the scenario:
+# Tasty Bytes — dbt + Snowflake Data Engineering Pipeline
 
-I work directly with analysts that track the sales performance of Tasty Bytes food trucks. On occasion, they approach me for help on pinpointing exact causes behind unexpected food truck performance, or for help building pipelines to extract new insights.
+## Overview
 
-Recently, they've approached you with concerns about the performance of a food truck in Hamburg, Germany. Throughout the project, I'll build functionality to help them get answers to their concerns. 
+I work as a data engineer on the Tasty Bytes team — a fictional food truck business operating 450 trucks globally. Analysts flagged the Hamburg, Germany truck as an underperformer and asked me to investigate. My goal was to build a production-grade data pipeline that combines Tasty Bytes sales data with third-party weather data to find the root cause.
 
-To do this, I've already set up my Snowflake account with Tasty Bytes data imported from S3 bucket.
+The finding: **Hamburg experiences consistently high wind speeds (40–67 mph), which suppresses food truck sales. Customers don't go out in those conditions.**
 
-I also imported data from the snowflake market place named 'FROSTBYTE_WEATHERSOURCE'.
+The pipeline ingests raw data from Snowflake's S3-hosted dataset and the FROSTBYTE_WEATHERSOURCE Marketplace feed, transforms it through a bronze → silver → gold architecture using dbt, and delivers the result as a live Streamlit dashboard deployed inside Snowflake.
 
-The ultimate goal is to combine the two project, and the final project is a data-engineering project of Tasty Bytes data analysis with dbt tools in snowflake.
+---
 
-dbt tools:/Users/siming/Desktop/vs code/snowflake-data-engineering-course/modern-data-engineering-snowflake
-This directory is a dbt-db project. I want to transfer this project to dbt using snowflake instead.
-The output should be of the same structure, including data(using broanze, silver and gold or similar), logs, analyses, macros, models, etc and configuration files.
+## Architecture
 
-snowflake projects: /Users/siming/Desktop/vs code/snowflake-data-engineering-course/modern-data-engineering-snowflake
-Only use the two datasets: FROSTBYTE_WEATHERSOURCE and TASTY_BYTES
-You should do the ingestion, transformation, and delivery, following the structure of the existing project.
+```
+S3 (Tasty Bytes)          Snowflake Marketplace
+      │                          │
+      ▼                          ▼
+ RAW_POS / RAW_CUSTOMER    FROSTBYTE_WEATHERSOURCE
+      │                          │
+      └──────────┬───────────────┘
+                 ▼
+           Bronze Layer (views)
+           Silver Layer (incremental tables)
+           Gold Layer   (incremental tables)
+                 │
+                 ▼
+        Streamlit Dashboard
+```
 
-The delivery is a directory with all needed direcotries and files that can run smoothly without error. These should be ready to clone to my github repo.
-I also need an instructing file to guide me step bu step what this project does and how each step is set.
+| Layer  | Snowflake Schema     | Materialization | Purpose                              |
+|--------|----------------------|-----------------|--------------------------------------|
+| Bronze | `TASTY_BYTES.BRONZE` | View            | Thin wrappers over raw source tables |
+| Silver | `TASTY_BYTES.SILVER` | Incremental     | Cleaned, enriched, joined datasets   |
+| Gold   | `TASTY_BYTES.GOLD`   | Incremental     | Business-level aggregates for BI     |
+
+---
+
+## Data Sources
+
+- **`TASTY_BYTES.RAW_POS`** — Point-of-sale data: orders, trucks, menus, locations, franchises (loaded from S3)
+- **`TASTY_BYTES.RAW_CUSTOMER`** — Customer loyalty program (loaded from S3)
+- **`FROSTBYTE_WEATHERSOURCE.ONPOINT_ID`** — Daily weather observations and postal codes (Snowflake Marketplace)
+
+---
+
+## Models
+
+**Bronze (10 views):** `bronze_order_header`, `bronze_order_detail`, `bronze_menu`, `bronze_truck`, `bronze_franchise`, `bronze_location`, `bronze_country`, `bronze_customer_loyalty`, `bronze_weather_history`, `bronze_postal_codes`
+
+**Silver (3 incremental tables):**
+- `silver_orders` — Full enriched order grain (orders + trucks + menus + locations + customers)
+- `silver_daily_weather` — Daily weather per city joined with country and city references
+- `silver_customer_loyalty_metrics` — Per-customer lifetime aggregates
+
+**Gold (3 incremental tables):**
+- `gold_daily_sales_hamburg` — Daily Hamburg sales joined with local weather (the primary output)
+- `gold_daily_city_metrics` — Daily sales aggregated across all cities
+- `gold_customer_loyalty_metrics` — Customer lifetime value and behaviour metrics
+
+---
+
+## Macros
+
+- `fahrenheit_to_celsius(temp_f)` — Inline SQL temperature conversion
+- `inch_to_millimeter(inch)` — Inline SQL precipitation conversion
+- `generate_schema_name` — Routes each layer to its correct Snowflake schema (BRONZE / SILVER / GOLD)
+
+---
+
+## Key Finding
+
+Querying `gold_daily_sales_hamburg` against Hamburg weather data reveals that the truck operates in a city with consistently high wind speeds throughout the year. Wind speeds regularly exceed 40 mph and spike above 60 mph. These conditions explain the truck's underperformance — the pipeline surfaces this by joining daily sales with weather observations at the city level.
+
+---
+
+## How to Run
+
+### Prerequisites
+- Snowflake account with `TASTY_BYTES` database and `FROSTBYTE_WEATHERSOURCE` Marketplace data
+- dbt-snowflake installed: `pip install dbt-snowflake`
+- RSA key pair configured for authentication (see `profiles.yml`)
+
+### 1. One-time Snowflake setup
+Run `analyses/setup_snowflake.sql` in Snowsight to create schemas, warehouse, S3 stage, and load raw data.
+
+### 2. Configure connection
+Edit `tasty_bytes_dbt/profiles.yml` with your Snowflake account, user, and private key path.
+
+### 3. Verify connection
+```bash
+cd tasty_bytes_dbt
+dbt debug
+```
+
+### 4. Build all models
+```bash
+dbt run
+```
+
+### 5. Run tests
+```bash
+dbt test
+```
+
+### 6. Generate and view documentation
+```bash
+dbt docs generate && dbt docs serve
+```
+
+### 7. Deploy Streamlit dashboard
+```bash
+cd ..
+snow streamlit deploy --replace --connection tasty_bytes
+```
+
+Open Snowsight → Streamlit → **Hamburg Weather & Sales** to view the interactive dashboard.
+
+---
+
+## Project Structure
+
+```
+Tasty-Bytes/
+├── streamlit_app.py              # Streamlit dashboard (deployed to Snowflake)
+├── snowflake.yml                 # Snowflake CLI project config
+├── project_structure.md          # This file
+└── tasty_bytes_dbt/
+    ├── dbt_project.yml
+    ├── profiles.yml              # Snowflake connection (gitignored)
+    ├── analyses/
+    │   └── setup_snowflake.sql   # One-time Snowflake setup script
+    ├── macros/
+    │   ├── fahrenheit_to_celsius.sql
+    │   ├── inch_to_millimeter.sql
+    │   └── generate_schema_name.sql
+    ├── models/
+    │   ├── bronze/               # 10 source views
+    │   ├── silver/               # 3 incremental tables
+    │   ├── gold/                 # 3 incremental tables
+    │   └── docs/                 # schema.yml + doc blocks
+    └── tests/                    # Custom data tests
+```

@@ -1,4 +1,5 @@
 .DS_Store
+tasty_bytes_dbt/profiles.yml
 .Rhistory
 project_structure_backup.md
 *.docx

@@ -1,3 +1,31 @@
+{% docs __overview__ %}
+# Tasty Bytes — dbt + Snowflake Analytics Pipeline
+
+**Tasty Bytes** is a global food truck business operating 450 trucks across multiple countries. This dbt project transforms raw operational data into analytics-ready tables to support business performance analysis.
+
+## Business Question
+Analysts flagged the **Hamburg, Germany** food truck as an underperformer. This pipeline combines Tasty Bytes sales data with third-party weather data (Snowflake Marketplace) to investigate whether weather conditions explain the revenue shortfall.
+
+## Architecture
+Data flows through three layers materialized in Snowflake:
+
+| Layer | Schema | Materialization | Purpose |
+|-------|--------|-----------------|---------|
+| Bronze | `TASTY_BYTES.BRONZE` | View | Thin wrappers over raw source tables — no transformation |
+| Silver | `TASTY_BYTES.SILVER` | Incremental table | Cleaned, enriched, and joined datasets |
+| Gold | `TASTY_BYTES.GOLD` | Incremental table | Business-level aggregates ready for BI consumption |
+
+## Data Sources
+- **`TASTY_BYTES.RAW_POS`** — Point-of-sale data: orders, trucks, menus, locations, franchises
+- **`TASTY_BYTES.RAW_CUSTOMER`** — Customer loyalty program data
+- **`FROSTBYTE_WEATHERSOURCE.ONPOINT_ID`** — Daily weather observations and postal code references (Snowflake Marketplace)
+
+## Key Output Models
+- **`gold_daily_sales_hamburg`** — Daily Hamburg truck sales joined with local weather (temperature, precipitation, wind)
+- **`gold_daily_city_metrics`** — Daily sales aggregated by city across all markets
+- **`gold_customer_loyalty_metrics`** — Lifetime value and behaviour metrics per loyalty customer
+{% enddocs %}
+
 {% docs order_id %}
 Unique identifier for each customer order.
 {% enddocs %}

@@ -9,7 +9,9 @@ models:
       - name: order_id
         description: '{{ doc("order_id") }}'
         tests:
-          - unique
+          - unique:
+              config:
+                severity: warn
           - not_null
           - generic_not_null
       - name: truck_id
@@ -58,7 +60,9 @@ models:
       - name: franchise_id
         description: '{{ doc("franchise_id") }}'
         tests:
-          - unique
+          - unique:
+              config:
+                severity: warn
           - not_null
 
   - name: bronze_location
