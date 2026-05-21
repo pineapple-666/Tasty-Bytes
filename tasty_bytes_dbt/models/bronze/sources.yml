@@ -13,12 +13,6 @@ sources:
       - name: order_header
       - name: order_detail
 
-  - name: tasty_bytes_raw_customer
-    database: TASTY_BYTES
-    schema: RAW_CUSTOMER
-    tables:
-      - name: customer_loyalty
-
   - name: frostbyte_weathersource
     database: FROSTBYTE_WEATHERSOURCE
     schema: ONPOINT_ID

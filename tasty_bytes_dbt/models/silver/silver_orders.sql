@@ -30,14 +30,6 @@ SELECT
     l.city                              AS location_city,
     oh.order_channel,
     oh.order_currency,
-    cl.customer_id,
-    cl.first_name,
-    cl.last_name,
-    cl.e_mail,
-    cl.phone_number,
-    cl.children_count,
-    cl.gender,
-    cl.marital_status,
     od.quantity,
     od.unit_price,
     od.price,
@@ -56,8 +48,6 @@ JOIN {{ ref('bronze_franchise') }} f
     ON t.franchise_id = f.franchise_id
 JOIN {{ ref('bronze_location') }} l
     ON oh.location_id = l.location_id
-LEFT JOIN {{ ref('bronze_customer_loyalty') }} cl
-    ON oh.customer_id = cl.customer_id
 
 {% if is_incremental() %}
     -- on each run, only process orders newer than the latest already in the table

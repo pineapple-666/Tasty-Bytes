@@ -39,24 +39,21 @@ S3 (Tasty Bytes)          Snowflake Marketplace
 ## Data Sources
 
 - **`TASTY_BYTES.RAW_POS`** — Point-of-sale data: orders, trucks, menus, locations, franchises (loaded from S3)
-- **`TASTY_BYTES.RAW_CUSTOMER`** — Customer loyalty program (loaded from S3)
 - **`FROSTBYTE_WEATHERSOURCE.ONPOINT_ID`** — Daily weather observations and postal codes (Snowflake Marketplace)
 
 ---
 
 ## Models
 
-**Bronze (10 views):** `bronze_order_header`, `bronze_order_detail`, `bronze_menu`, `bronze_truck`, `bronze_franchise`, `bronze_location`, `bronze_country`, `bronze_customer_loyalty`, `bronze_weather_history`, `bronze_postal_codes`
+**Bronze (9 views):** `bronze_order_header`, `bronze_order_detail`, `bronze_menu`, `bronze_truck`, `bronze_franchise`, `bronze_location`, `bronze_country`, `bronze_weather_history`, `bronze_postal_codes`
 
-**Silver (3 incremental tables):**
-- `silver_orders` — Full enriched order grain (orders + trucks + menus + locations + customers)
+**Silver (2 incremental tables):**
+- `silver_orders` — Full enriched order grain (orders + trucks + menus + locations)
 - `silver_daily_weather` — Daily weather per city joined with country and city references
-- `silver_customer_loyalty_metrics` — Per-customer lifetime aggregates
 
-**Gold (3 incremental tables):**
+**Gold (2 incremental tables):**
 - `gold_daily_sales_hamburg` — Daily Hamburg sales joined with local weather (the primary output)
 - `gold_daily_city_metrics` — Daily sales aggregated across all cities
-- `gold_customer_loyalty_metrics` — Customer lifetime value and behaviour metrics
 
 ---
 

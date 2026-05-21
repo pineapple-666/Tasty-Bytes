@@ -82,15 +82,6 @@ models:
         tests:
           - not_null
 
-  - name: bronze_customer_loyalty
-    description: Raw loyalty program member profiles.
-    columns:
-      - name: customer_id
-        description: '{{ doc("customer_id") }}'
-        tests:
-          - unique
-          - not_null
-
   - name: bronze_weather_history
     description: Raw daily weather history from the Frostbyte WeatherSource marketplace dataset.
     columns:
@@ -114,7 +105,7 @@ models:
   - name: silver_orders
     description: >
       Enriched and joined order records combining order headers, line items,
-      menu, truck, franchise, location, and customer loyalty data.
+      menu, truck, franchise, and location data.
       Equivalent to the harmonized.orders_v view in the original Snowflake schema.
     columns:
       - name: order_id
@@ -158,24 +149,6 @@ models:
         description: '{{ doc("tot_precipitation_in") }}'
       - name: max_wind_speed_100m_mph
         description: '{{ doc("max_wind_speed_100m_mph") }}'
-
-  - name: silver_customer_loyalty_metrics
-    description: >
-      Aggregated loyalty metrics per customer including lifetime sales,
-      order count, and visited locations.
-      Equivalent to harmonized.customer_loyalty_metrics_v in the original schema.
-    columns:
-      - name: customer_id
-        description: '{{ doc("customer_id") }}'
-        tests:
-          - unique
-          - not_null
-      - name: total_sales
-        description: '{{ doc("total_sales") }}'
-      - name: total_orders
-        description: '{{ doc("total_orders") }}'
-      - name: visited_location_ids_array
-        description: '{{ doc("visited_location_ids_array") }}'
 
   # ── GOLD ──────────────────────────────────────────────────────────────────
 
@@ -225,19 +198,3 @@ models:
       - name: max_wind_speed_100m_mph
         description: '{{ doc("max_wind_speed_100m_mph") }}'
 
-  - name: gold_customer_loyalty_metrics
-    description: >
-      Final analytics-ready customer loyalty table with lifetime spend,
-      order count, and visited locations. Ordered by total spend descending.
-    columns:
-      - name: customer_id
-        description: '{{ doc("customer_id") }}'
-        tests:
-          - unique
-          - not_null
-      - name: total_sales
-        description: '{{ doc("total_sales") }}'
-      - name: total_orders
-        description: '{{ doc("total_orders") }}'
-      - name: favourite_brand
-        description: '{{ doc("favourite_brand") }}'

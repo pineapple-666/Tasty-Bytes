@@ -46,7 +46,6 @@ S3 (Tasty Bytes orders)      Snowflake Marketplace (Weather)
 |---|---|
 | `gold_daily_sales_hamburg` | Daily Hamburg sales joined with local weather — primary output |
 | `gold_daily_city_metrics` | Daily sales aggregated across all cities |
-| `gold_customer_loyalty_metrics` | Lifetime value and behaviour per loyalty customer |
 
 ---
 
@@ -62,10 +61,10 @@ pip install dbt-snowflake
 # 3. Verify connection
 cd tasty_bytes_dbt && dbt debug
 
-# 4. Build all 16 models
+# 4. Build all models
 dbt run
 
-# 5. Run 25 data quality tests
+# 5. Run data quality tests
 dbt test
 
 # 6. Open data catalog
@@ -76,6 +75,16 @@ cd .. && snow streamlit deploy --replace --connection tasty_bytes
 ```
 
 > See [tasty_bytes_dbt/GUIDE.md](tasty_bytes_dbt/GUIDE.md) for the full step-by-step guide including Snowflake setup, CI/CD, and Snowpipe.
+
+---
+
+## Data Coverage Notes
+
+**Order data (S3 subset):** Only 3 cities are loaded for demonstration purposes — **Boston, Cairo, and Mumbai**. All other cities in `gold_daily_city_metrics` will show zero sales. The full production dataset covers all 450 trucks globally.
+
+**Weather data (Frostbyte Marketplace):** The weather dataset covers 22 cities but does not include Cairo. As a result, Cairo's order data has no matching weather records and is absent from `gold_daily_city_metrics`. This is a gap in the third-party dataset, not a pipeline bug.
+
+**Does the Cairo gap affect the Hamburg analysis?** No. Hamburg is fully covered by the Frostbyte weather dataset. The primary output — `gold_daily_sales_hamburg` — joins Hamburg sales with Hamburg weather and is unaffected by Cairo's missing data.
 
 ---
 

@@ -17,13 +17,11 @@ Data flows through three layers materialized in Snowflake:
 
 ## Data Sources
 - **`TASTY_BYTES.RAW_POS`** — Point-of-sale data: orders, trucks, menus, locations, franchises
-- **`TASTY_BYTES.RAW_CUSTOMER`** — Customer loyalty program data
 - **`FROSTBYTE_WEATHERSOURCE.ONPOINT_ID`** — Daily weather observations and postal code references (Snowflake Marketplace)
 
 ## Key Output Models
 - **`gold_daily_sales_hamburg`** — Daily Hamburg truck sales joined with local weather (temperature, precipitation, wind)
 - **`gold_daily_city_metrics`** — Daily sales aggregated by city across all markets
-- **`gold_customer_loyalty_metrics`** — Lifetime value and behaviour metrics per loyalty customer
 {% enddocs %}
 
 {% docs order_id %}
@@ -118,38 +116,6 @@ Channel through which the order was placed (e.g., in-person, app).
 ISO currency code for the order (e.g., USD, EUR).
 {% enddocs %}
 
-{% docs customer_id %}
-Unique identifier for the loyalty program customer.
-{% enddocs %}
-
-{% docs first_name %}
-Customer's first name.
-{% enddocs %}
-
-{% docs last_name %}
-Customer's last name.
-{% enddocs %}
-
-{% docs e_mail %}
-Customer's email address.
-{% enddocs %}
-
-{% docs phone_number %}
-Customer's phone number.
-{% enddocs %}
-
-{% docs children_count %}
-Number of children the customer has.
-{% enddocs %}
-
-{% docs gender %}
-Customer's gender.
-{% enddocs %}
-
-{% docs marital_status %}
-Customer's marital status.
-{% enddocs %}
-
 {% docs quantity %}
 Number of units of the menu item ordered.
 {% enddocs %}
@@ -226,22 +192,3 @@ Maximum wind speed measured at 100 meters above ground, in miles per hour.
 Total sales revenue for the day at the given city, in the order currency.
 {% enddocs %}
 
-{% docs total_sales %}
-Lifetime total spend by the customer across all orders.
-{% enddocs %}
-
-{% docs total_orders %}
-Total number of distinct orders placed by the customer.
-{% enddocs %}
-
-{% docs visited_location_ids_array %}
-Array of distinct location IDs the customer has visited.
-{% enddocs %}
-
-{% docs favourite_brand %}
-The food truck brand the customer most frequently orders from.
-{% enddocs %}
-
-{% docs sign_up_date %}
-Date the customer enrolled in the loyalty program.
-{% enddocs %}

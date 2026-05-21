@@ -13,20 +13,19 @@ The project answers this by joining sales data with weather data (temperature, p
 ## Project Architecture
 
 ```
-Sources (Snowflake)
-  └── TASTY_BYTES.RAW_POS          (orders, trucks, menus, locations, ...)
-  └── TASTY_BYTES.RAW_CUSTOMER     (customer loyalty profiles)
-  └── FROSTBYTE_WEATHERSOURCE      (daily weather history, postal codes)
-
-Bronze Layer  →  views in TASTY_BYTES.BRONZE
-  Raw data selected column-by-column from source tables.
-  No transformation — just naming and column selection.
-
-Silver Layer  →  views in TASTY_BYTES.SILVER
-  Cleansed, joined, and enriched data. Business logic lives here.
-
-Gold Layer  →  tables in TASTY_BYTES.GOLD
-  Aggregated, analytics-ready outputs. This is what analysts query.
+S3 (Tasty Bytes orders)      Snowflake Marketplace (Weather)
+         │                              │
+         ▼                              ▼
+   RAW_POS / RAW_CUSTOMER     FROSTBYTE_WEATHERSOURCE
+         │                              │
+         └──────────┬───────────────────┘
+                    ▼
+             Bronze  (views)       ← source wrappers
+             Silver  (incremental) ← cleaned & joined
+             Gold    (incremental) ← business aggregates
+                    │
+                    ▼
+          Streamlit in Snowflake
 ```
 
 ### Model Lineage
@@ -37,15 +36,11 @@ bronze_order_detail  ├─► silver_orders ───────────�
 bronze_truck         │                                        ├─► gold_daily_sales_hamburg
 bronze_menu          │                                        ├─► gold_daily_city_metrics
 bronze_franchise     │                                        │
-bronze_location      │                                        │
-bronze_customer_loyalty ┘                                     │
+bronze_location      ┘                                        │
                                                               │
 bronze_weather_history ─┐                                     │
 bronze_postal_codes     ├─► silver_daily_weather ─────────────┘
 bronze_country          ┘
-
-bronze_customer_loyalty ─┐
-bronze_order_header      ├─► silver_customer_loyalty_metrics ─► gold_customer_loyalty_metrics
 ```
 
 ---
@@ -283,6 +278,16 @@ Edit `streamlit_app.py`, then run the same deploy command — `--replace` overwr
 
 ---
 
+## Data Coverage Notes
+
+**Order data (S3 subset):** Only 3 cities are loaded for demonstration purposes — **Boston, Cairo, and Mumbai**. All other cities in `gold_daily_city_metrics` will show zero sales. The full production dataset covers all 450 trucks globally.
+
+**Weather data (Frostbyte Marketplace):** The weather dataset covers 22 cities but does not include Cairo. As a result, Cairo's order data has no matching weather records and is absent from `gold_daily_city_metrics`. This is a gap in the third-party dataset, not a pipeline bug.
+
+**Does the Cairo gap affect the Hamburg analysis?** No. Hamburg is fully covered by the Frostbyte weather dataset. The primary output — `gold_daily_sales_hamburg` — joins Hamburg sales with Hamburg weather and is unaffected by Cairo's missing data.
+
+---
+
 ## Step 9 — Query the Gold Tables
 
 After a successful `dbt run`, query your results in Snowflake:
@@ -297,9 +302,7 @@ SELECT * FROM TASTY_BYTES.GOLD.GOLD_DAILY_CITY_METRICS
 WHERE country_desc = 'Germany'
 ORDER BY date;
 
--- Top customers by lifetime spend
-SELECT * FROM TASTY_BYTES.GOLD.GOLD_CUSTOMER_LOYALTY_METRICS
-LIMIT 20;
+
 ```
 
 ---
@@ -394,19 +397,16 @@ tasty_bytes_dbt/
 │   │   ├── bronze_franchise.sql
 │   │   ├── bronze_location.sql
 │   │   ├── bronze_country.sql
-│   │   ├── bronze_customer_loyalty.sql
 │   │   ├── bronze_weather_history.sql
 │   │   └── bronze_postal_codes.sql
 │   │
 │   ├── silver/
 │   │   ├── silver_orders.sql               Full enriched order grain
-│   │   ├── silver_daily_weather.sql        Weather joined with city/country refs
-│   │   └── silver_customer_loyalty_metrics.sql  Per-customer aggregates
+│   │   └── silver_daily_weather.sql        Weather joined with city/country refs
 │   │
 │   ├── gold/
 │   │   ├── gold_daily_sales_hamburg.sql    Hamburg sales + weather (main output)
-│   │   ├── gold_daily_city_metrics.sql     All-city daily sales + weather
-│   │   └── gold_customer_loyalty_metrics.sql  Final customer analytics table
+│   │   └── gold_daily_city_metrics.sql     All-city daily sales + weather
 │   │
 │   └── docs/
 │       ├── docs_blocks.md                  Column-level documentation blocks
