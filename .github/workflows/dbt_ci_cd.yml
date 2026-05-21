@@ -15,7 +15,7 @@ on:
         default: 'prod'
 
 env:
-  DBT_PROFILES_DIR: ./tasty_bytes_dbt
+  DBT_PROFILES_DIR: .
 
 jobs:
   # ---------------------------------------------------------------------------
