@@ -247,7 +247,43 @@ Opens a browser with a full data catalog including:
 
 ---
 
-## Step 8 — Query the Gold Tables
+## Step 8 — Deploy the Streamlit Dashboard
+
+![Hamburg Weather & Sales Dashboard](../assets/streamlit_dashboard.png)
+
+The Streamlit app reads directly from `TASTY_BYTES.GOLD.GOLD_DAILY_SALES_HAMBURG` and displays daily sales overlaid with temperature, precipitation, and wind speed. A month/year picker lets you explore any period in the dataset.
+
+### Prerequisites
+- [Snowflake CLI](https://docs.snowflake.com/en/developer-guide/snowflake-cli/index) installed: `pip install snowflake-cli-labs`
+- A `tasty_bytes` connection in `~/.snowflake/connections.toml` using RSA key-pair auth (see below)
+
+### One-time connection setup (`~/.snowflake/connections.toml`)
+```toml
+[tasty_bytes]
+account = "YOUR_ACCOUNT"
+user = "YOUR_USER"
+authenticator = "SNOWFLAKE_JWT"
+private_key_file = "/path/to/rsa_key.pem"
+database = "TASTY_BYTES"
+schema = "GOLD"
+warehouse = "COMPUTE_WH"
+role = "ACCOUNTADMIN"
+```
+
+### Deploy
+```bash
+cd ..   # from tasty_bytes_dbt/ back to repo root
+snow streamlit deploy --replace --connection tasty_bytes
+```
+
+The CLI uploads `streamlit_app.py` to Snowflake and prints the app URL. Open it in Snowsight under **Streamlit → Hamburg Weather & Sales**.
+
+### Redeploy after changes
+Edit `streamlit_app.py`, then run the same deploy command — `--replace` overwrites the existing app.
+
+---
+
+## Step 9 — Query the Gold Tables
 
 After a successful `dbt run`, query your results in Snowflake:
 
@@ -270,7 +306,7 @@ LIMIT 20;
 
 ## Step 9 — CI/CD and Scheduling (GitHub Actions)
 
-The workflow file [`.github/workflows/dbt_ci_cd.yml`](.github/workflows/dbt_ci_cd.yml) handles three things automatically once you push to GitHub:
+The workflow file [`../.github/workflows/dbt_ci_cd.yml`](../.github/workflows/dbt_ci_cd.yml) handles three things automatically once you push to GitHub:
 
 ### What triggers what
 
@@ -285,16 +321,26 @@ The workflow file [`.github/workflows/dbt_ci_cd.yml`](.github/workflows/dbt_ci_c
 
 Go to your repo → **Settings → Secrets and variables → Actions → New repository secret**. Add:
 
-| Secret name | Example value |
+| Secret name | Value |
 |---|---|
-| `SNOWFLAKE_ACCOUNT` | `xy12345.us-east-1` |
-| `SNOWFLAKE_USER` | `siming` |
-| `SNOWFLAKE_PASSWORD` | `your-password` |
-| `SNOWFLAKE_ROLE` | `accountadmin` |
+| `SNOWFLAKE_ACCOUNT` | e.g. `xy12345.us-east-1` |
+| `SNOWFLAKE_USER` | your Snowflake username |
+| `SNOWFLAKE_PRIVATE_KEY` | contents of your `rsa_key.pem` file |
+| `SNOWFLAKE_ROLE` | `ACCOUNTADMIN` |
 | `SNOWFLAKE_WAREHOUSE` | `COMPUTE_WH` |
 | `SNOWFLAKE_DATABASE` | `TASTY_BYTES` |
 
-The workflow writes a `profiles.yml` from these secrets at runtime — your real credentials are never stored in the repo.
+The workflow writes a `profiles.yml` from these secrets at runtime using RSA key-pair authentication — your credentials are never stored in the repo.
+
+To add secrets via CLI:
+```bash
+gh secret set SNOWFLAKE_ACCOUNT --body "your-account"
+gh secret set SNOWFLAKE_USER --body "your-user"
+gh secret set SNOWFLAKE_PRIVATE_KEY < ~/.snowflake/rsa_key.pem
+gh secret set SNOWFLAKE_ROLE --body "ACCOUNTADMIN"
+gh secret set SNOWFLAKE_WAREHOUSE --body "COMPUTE_WH"
+gh secret set SNOWFLAKE_DATABASE --body "TASTY_BYTES"
+```
 
 ### Pause the daily schedule
 
